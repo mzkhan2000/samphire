@@ -1,9 +1,10 @@
 """
-Parameters:
-relations file
-graph directory
-shape
-relevance type
+Computes the pertinence of relations for type-like relations.
+
+This includes:
+1) Pertinence by popularity
+2) Pertinence by focus
+3) Combined pertinence (produce of above two)
 """
 import os
 import sys
@@ -168,7 +169,7 @@ def generate_nationality_features(method, infile):
 	top_relations.to_csv(top_relations_file, sep=',', header=True, index=False)
 	print '\nSaved: top-{} relations for each nationality: {}'.format(top, top_relations_file)
 
-def popular_relevance(reltype, oid, relsynonyms=None, display=True):
+def popular_pertinence(reltype, oid, relsynonyms=None, display=True):
 	global sid_people, pid_of_sid_people
 	reltypes = [reltype] + list(relsynonyms)
 
@@ -223,7 +224,7 @@ def read_relational_frequency():
 	    for rid, rcnt in zip(relids, relcounts):
 	        rel_freq[rid] = rel_freq.get(rid, 0) + rcnt
 
-def relational_relevance(reltype, oid, relsynonyms=None, display=False):
+def relational_pertinence(reltype, oid, relsynonyms=None, display=False):
 	global sid_people, pid_of_sid_people
 	reltypes = [reltype] + list(relsynonyms)
 	# Find relation ids for this relation type and its synonyms
@@ -269,23 +270,28 @@ def relational_relevance(reltype, oid, relsynonyms=None, display=False):
 	df['activityTF_avg'] = [df.loc[df['activityId']==rid, 'activityTF'].values[0]/float(len(sid_with_reltype)) for rid in pid_of_sid_with_reltype]
 	outofset_freq = {k:(v+1) if k not in pid_of_sid_with_reltype else 1+v-pid_of_sid_with_reltype[k] for k, v in rel_freq.iteritems()}
 	tot = np.sum(outofset_freq.values())
-	outofset_freq = {k:v/float(tot) for k, v in outofset_freq.iteritems()}
-	df['activityIDF'] = [(pid_of_sid_with_reltype[r])/(float(outofset_freq[r])) for r in pid_of_sid_with_reltype]
-	df = df[['activityId', 'activity', 'activityTF', 'activityTF_avg', 'activityIDF']]
-	df['activityTFIDF'] = df['activityIDF'] 
+	# outofset_freq = {k:v/float(tot) for k, v in outofset_freq.iteritems()}
+	idf = {k:np.log(tot/float(v)) for k, v in outofset_freq.iteritems()}
+	tf = {k:np.log(1 + pid_of_sid_with_reltype[k]) for k in pid_of_sid_with_reltype}
+	# df['activityIDF'] = [(pid_of_sid_with_reltype[r])/(float(outofset_freq[r])) for r in pid_of_sid_with_reltype]
+	# df = df[['activityId', 'activity', 'activityTF', 'activityTF_avg', 'activityIDF']]
+	# df['activityTFIDF'] = df['activityIDF'] 
+	df['activityTFIDF'] = [tf[r] * idf[r] for r in pid_of_sid_with_reltype]
 	df = df.sort_values(by='activityTFIDF', ascending=False)
 	return df
 
-def combined_relevance(reltype, oid, relsynonyms=None, display=False):
+def combined_pertinence(reltype, oid, relsynonyms=None, display=False):
 	"Combines experiment1 and experiment2 approach. Ignores most input parameters except the target."
 	global cupbase
-	pr_professions = join(cupbase, 'popular_relevance/professions/')
-	rr_professions = join(cupbase, 'relational_relevance/professions/')
-	pr_nationalities = join(cupbase, 'popular_relevance/nationalities/')
-	rr_nationalities = join(cupbase, 'relational_relevance/nationalities/')
+	pr_professions = join(cupbase, 'popular_pertinence/professions/')
+	rr_professions = join(cupbase, 'relational_pertinence/professions/')
+	pr_nationalities = join(cupbase, 'popular_pertinence/nationalities/')
+	rr_nationalities = join(cupbase, 'relational_pertinence/nationalities/')
 	
-	fnames_professions = {int(f.split('.csv')[0]):f for f in os.listdir(pr_professions) if re.match('[0-9]+.csv', f) is not None}
-	fnames_nationalities = {int(f.split('.csv')[0]):f for f in os.listdir(pr_nationalities) if re.match('[0-9]+.csv', f) is not None}
+	if exists(pr_professions):
+		fnames_professions = {int(f.split('.csv')[0]):f for f in os.listdir(pr_professions) if re.match('[0-9]+.csv', f) is not None}
+	if exists(pr_nationalities):
+		fnames_nationalities = {int(f.split('.csv')[0]):f for f in os.listdir(pr_nationalities) if re.match('[0-9]+.csv', f) is not None}
 	reltypes = [reltype] + list(relsynonyms)
 
 	# Find relation ids for this relation type and its synonyms
@@ -293,7 +299,7 @@ def combined_relevance(reltype, oid, relsynonyms=None, display=False):
 
 	if 'occupation' in reltypes:
 		exp1 = pr_professions
-		exp2 = exp2_professions
+		exp2 = rr_professions
 		fnames = fnames_professions
 	if 'country of citizenship' in reltypes:
 		exp1 = pr_nationalities
@@ -307,23 +313,23 @@ def combined_relevance(reltype, oid, relsynonyms=None, display=False):
 	d = d.sort_values(by='activityTFIDF', ascending=False)
 	return d
 
-def compute_relevance(graphbase, shape, relations_fname, people_fname, infile, output, relevance):
+def compute_pertinence(graphbase, shape, relations_fname, people_fname, infile, output, pertinence):
 	global cupbase
 	cupbase = output
 
-	# Depending on relevance
-	if relevance == 'popular':
-		method = popular_relevance
-	elif relevance == 'relational':
-		method = relational_relevance
-	elif relevance == 'combined':
-		method = combined_relevance
+	# Depending on pertinence
+	if pertinence == 'popular':
+		method = popular_pertinence
+	elif pertinence == 'relational':
+		method = relational_pertinence
+	elif pertinence == 'combined':
+		method = combined_pertinence
 
 	# Read relations
 	read_relations(relations_fname)
 	sys.stdout.flush()
 
-	if relevance in ('popular', 'relational'):
+	if pertinence in ('popular', 'relational'):
 		# Read graph
 		read_graph(graphbase, shape)
 		sys.stdout.flush()
@@ -342,13 +348,13 @@ if __name__ == '__main__':
 	Example call:
 
 	## Wikidata
-	python compute_relevance.py
+	python compute_pertinence.py
 		-kg ../model/kg/_undir/
 		-rel ../model/kg/relations.txt
 		-shape 29413625 29413625 839
 		-R 'popular'
 		-ppl ../../wikidata/processed/cup/persons_match.csv
-		-i ../../wikidata/processed/cup/profession_match.csv
+		-i ../../wikidata/processed/cup/professions_match.csv
 		-o ../../output/
 	"""
 	parser = ArgumentParser(description=__doc__)
@@ -358,7 +364,7 @@ if __name__ == '__main__':
 		help='Absolute path to the relations file.')
 	parser.add_argument('-shape', '--shape', nargs='+', type=int, required=True, \
 		help='Shape representing the knowledge graph.')
-	parser.add_argument('-R', '--relevance', required=True, \
+	parser.add_argument('-R', '--pertinence', required=True, \
 		help='Relevance type: one of popular, relational, combined')
 	parser.add_argument('-ppl', '--people', required=True, \
 		help='Input file containing the persons.')
@@ -375,12 +381,12 @@ if __name__ == '__main__':
 	args.people = abspath(expanduser(args.people))
 	args.input = abspath(expanduser(args.input))
 	args.output = abspath(expanduser(args.output))
-	if args.relevance not in ('popular', 'relational', 'combined'):
-		raise Exception('Unrecognized relevance type: %s' % args.relevance)
+	if args.pertinence not in ('popular', 'relational', 'combined'):
+		raise Exception('Unrecognized pertinence type: %s' % args.pertinence)
 	
-	compute_relevance(
+	compute_pertinence(
 		args.kg, args.shape, args.rel, args.people, args.input, 
-		args.output, args.relevance
+		args.output, args.pertinence
 	)
 
 	print '\nDone!\n'

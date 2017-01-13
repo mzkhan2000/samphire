@@ -1,4 +1,6 @@
-# RelSifter: Scoring Triples for Type-Like Relations [Team: samphire]
+# RelSifter: Scoring Triples for Type-Like Relations 
+
+## Team: **samphire** at WSDM Cup 2017 held at Cambridge, UK.
 
 ## Pre-requisites
 Download a .zip file from [wsdm-cup-2017-models](https://iu.box.com/s/impsevvpr3xsmcpdm8n36ame8msq8iew) containing all the following:

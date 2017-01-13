@@ -1,15 +1,13 @@
-# Team: samphire
-
-# RelSifter: Scoring Triples for Type-Like Relations
+# RelSifter: Scoring Triples for Type-Like Relations [Team: samphire]
 
 ## Pre-requisites
 Download a .zip file from [wsdm-cup-2017-models](https://iu.box.com/s/impsevvpr3xsmcpdm8n36ame8msq8iew) containing all the following:
-	- knowledge graph
-	- machine learned models for profession and nationality
+* knowledge graph
+* machine learned models for profession and nationality
 
 ## Getting started
 1. Clone this repository and cd into it.
-2. Under the directory **relsifter**, place the uncompressed directory **wsdm-cup-2017-models** and rename it to **model**.
+2. Under the directory ``relsifter``, place the uncompressed directory ``wsdm-cup-2017-models`` and rename it to ``model``.
 
 ## Installing RelSifter
 Navigate to the root directory and run the following command. This may take a while.
@@ -24,7 +22,7 @@ Once installed, the following command can be used to run RelSifter. This will cr
 ```
 
 ## Development mode
-Start with installing RelSifter in development mode.
+Start with installing RelSifter in development mode to experiment with extracting features and building models for predicting relevance scores for type-like relations.
 ```bash
     python setup.py develop
 ```

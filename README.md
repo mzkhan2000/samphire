@@ -3,7 +3,7 @@
 ## Team: **samphire** at WSDM Cup 2017 held at Cambridge, UK.
 
 ## Pre-requisites
-Download a .zip file from [wsdm-cup-2017-models](https://iu.box.com/s/impsevvpr3xsmcpdm8n36ame8msq8iew) containing all the following:
+Download a .zip file from [wsdm-cup-2017-models](https://1drv.ms/f/s!AiE9pzEIRgyOiH7tmPvSqjCJsDlu) containing all the following:
 * knowledge graph
 * machine learned models for profession and nationality
 
